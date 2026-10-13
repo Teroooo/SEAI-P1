@@ -1,6 +1,9 @@
 % Generalised Langford / Nickerson sequences L(s,n).
-% Baseline: Hakan Kjellerstrand's model (CC-BY-4.0), kept in langford_baseline.mzn.
-include "globals.mzn";
+% Baseline: Hakan Kjellerstrand's model (CC-BY-4.0), kept in langford2.mzn.
+% Only the globals we use: globals.mzn does not type-check with Debian's MiniZinc 2.6.4 + Gecode 6.2.0.
+include "alldifferent.mzn";
+include "global_cardinality.mzn";
+include "lex_lesseq.mzn";
 
 % ---- data, all set from proj.py ----
 int: n;                 % numbers 1..n
@@ -34,9 +37,13 @@ constraint if use_gcc then
   global_cardinality(seq, [i | i in NUMS], [s | i in NUMS])
 else true endif;
 
-% symmetry: keep only one of a sequence and its reverse
+% symmetry: keep only one of a sequence and its reverse.
+% Reversing moves the first copy of i to N+1 - (s-1)*(i+d) - p[i]. The comparison is on p, in the
+% order the search branches: lex on seq fights largest-first search (it wants small numbers first).
+array[NUMS] of var int: p_rev = [ N+1 - (s-1)*(i+d) - p[i] | i in NUMS ];
 constraint if break_symmetry then
-  lex_lesseq(seq, [ seq[N+1-q] | q in POS ])
+  if search_mode < 2 then lex_lesseq(p, p_rev)
+  else lex_lesseq([ p[n+1-i] | i in NUMS ], [ p_rev[n+1-i] | i in NUMS ]) endif
 else true endif;
 
 % redundant, from the parity argument (s=2, d=1 only):

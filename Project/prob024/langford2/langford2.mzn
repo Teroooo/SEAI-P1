@@ -62,7 +62,7 @@ output [
 %
 % data
 %
-k = 4;
+% k = 4;   (k is set by proj.py)
 % k = 7;
 % k = 8;
 % k = 10;

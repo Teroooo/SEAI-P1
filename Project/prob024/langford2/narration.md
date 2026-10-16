@@ -1,60 +1,60 @@
 # Video script: Langford's problem as a CSP
 
-Target: 3 minutes of explanation (scenes 1–8), then 2 minutes of live demo.
-Narration is written at about 150 words per minute. The `[cue]` markers say what is on screen when the sentence starts.
-Every number below comes from `results.csv` or from running `proj.py`.
+Explanation: 2:48 of animation (`videos/langford_full.mp4`), then about 2 minutes of live demo, so the whole video is under the 3 + 2 minute limit.
 
-Brief requirements this script covers: all members on camera (add your own shots), AI use described in the video (scene 8), 3 + 2 minute structure.
+The `[cue]` markers say what is on screen when the sentence starts. Scene names are the classes in `langford.py`, and times are where each scene starts and ends in `langford_full.mp4`. The narration is paced at about 150 words per minute: speak calmly and let the pauses breathe.
+
+The thread: **a puzzle with a strange pattern → how the original model attacks it → our extension → our key idea → why the pattern holds → how that proof makes the solver instant → explaining "no solution".**
 
 ---
 
-## Part 1: Explanation (≈ 3:00)
+## Part 1: Explanation (0:00 – 2:48)
 
-### 1. `LangfordPuzzle` (0:00 – 0:20)
+### 1. `LangfordPuzzle` (0:00 – 0:29)
 
-[title] Langford's problem, CSPLib problem 24. [blocks fall into line] Two copies of each number from one to four: line them up so that between the two copies of *k* sit exactly *k* blocks. [arc, brace] Three blocks between the 3s; [all arcs] the same for every number.
+[title] Here's a puzzle. [blocks fall into line] Take two copies of each number from one to four, and line them up so that [arcs] the two ones have one block between them, the two twos have two, the threes three.
 
-[grid] It works only for some *n*: [pattern] those congruent to 0 or 3 mod 4. Keep that in mind.
+[grid] For which *n* can you do this? [ticks and crosses] A strange pattern shows up. [yellow line] It only ever works when *n* is 0 or 3 mod 4. [question] Why would a puzzle about gaps care about the number four? Hold that thought.
 
-### 2. `GeneralisedProblem` (0:20 – 0:33)
+### 2. `BaselineModel` (0:29 – 0:56)
 
-[header] A MiniZinc model already exists, so I extended the problem: [params] *s* copies of each number, with consecutive copies of *i* exactly *i* plus *d* apart. [L(3,9)] Three copies of one to nine; [Nickerson] *d* = 0 is the Nickerson variant.
+[pairs above the seats] The model we started from gives every copy its own unknown seat, [arcs with +2, +3…] with a rule tying each pair together: the second copy sits *i* plus one seats after the first.
 
-### 3. `PositionViewpoint` (0:33 – 0:58)
+[blocks drop in, the 4 falls off the end] The solver tries seats, and when something doesn't fit, it backs up and tries again. [list] But it only knows pairs, and when there's no solution, it has to rule out every arrangement: fifty-two seconds for thirteen.
 
-[seats] Asking every seat "which number sits here?" leaves the spacing to be checked afterwards. [coupled 3s] Instead, each number gets one variable, *p_i*, the seat of its first copy. Like a train: place the engine and the carriages follow. [p₃ slides] Move *p₃* and both 3s move, so the spacing is never wrong.
+### 3. `GeneralisedProblem` (0:56 – 1:07)
 
-[constraints] What remains: the last copy fits, no two copies share a seat, and a channel to print the sequence. [count] The search branches on *n* variables, not *s* times *n*.
+[header] So we asked for more: [two lines] *s* copies of each number, with consecutive copies *i* plus *d* apart. [long row] Here are three copies of one to nine.
 
-### 4. `ReversalSymmetry` (0:58 – 1:13)
+### 4. `PositionViewpoint` (1:07 – 1:28)
 
-[mirror] Every solution read backwards is another solution. [rule] I keep the one whose positions are lexicographically smaller, compared in the order the search branches so they don't fight. [table] At *n* = 12: half the nodes.
+[two 3s, linked] Here's the key idea. If you know where the first 3 sits, you already know where every 3 sits.
 
-### 5. `ParityArgument` (1:13 – 1:38)
+[p₃ slides] So in our model, only the first copy is an unknown. Move it, and the rest follow. [yellow line] That's *n* unknowns instead of 2*n*, and the gaps can never be wrong, however many copies.
 
-[shaded seats] My favourite idea: shade the odd seats. [4 and 2] An even number has an odd gap, so it takes exactly one odd seat. [3 and 1] An odd number's copies share a colour: they arrive as a couple.
+### 5. `ReversalSymmetry` (1:28 – 1:38)
 
-[count] *n* odd seats; the even numbers take one each; couples fill the rest two at a time, so the rest must be even. [last line] That is exactly *n* ≡ 0 or 3 mod 4.
+[row flips] And any solution read backwards is another solution. [cross] So we only keep one of each pair, and the search is cut in half.
 
-### 6. `ParityThirteen` (1:38 – 1:50)
+### 6. `ParityArgument` (1:38 – 1:59)
 
-[13 seats] At 13: six seats for the even numbers, seven left. [pairs] Couples fill six; [red seat] one is always empty. [model] As a constraint, MiniZinc rejects the instance before searching.
+[shading] Now, back to that pattern. Shade every other seat.
 
-### 7. `ParityPayoff` (1:50 – 2:00)
+[4s, then 2s] An even number has an odd gap, so exactly one of its copies lands on a shaded seat. [3s, then 1s] An odd number has an even gap: both copies are shaded, or neither. [yellow line] So on shaded seats, odd numbers always arrive in pairs.
 
-[n = 13] The baseline needs 52 seconds to prove *n* = 13 impossible, my model without the cut 47. With it: six hundredths of a second. [n = 14] At 14, only the cut finishes.
+### 7. `ParityThirteen` (1:59 – 2:25)
 
-### 8. `ExplainerScene` (2:00 – 2:20)
+[13 circles] Try thirteen. There are thirteen shaded seats. [even tiles] The six even numbers take one each, [brace] seven are left, and the odd numbers can only fill them two at a time. [red seat] Seven is odd. One seat is always empty, so no arrangement can work.
 
-[terminal] "Unsatisfiable" doesn't say *why*, so `proj.py` explains. [sum] The seat numbers have a fixed total, so the first positions must sum to 287 over 2: [cross] not a whole number. Like a receipt that doesn't add up. [bar] It explains 40 of 68 impossible test instances, every classic one. [limitation] For now, only after the solver answers.
+[yellow formula] Do the same count for any *n*, and the leftover is even exactly when *n* is 0 or 3 mod 4. That's our pattern.
 
-### 9. `HonestResults` (2:20 – 2:35)
+### 8. `ParityPayoff` (2:25 – 2:37)
 
-[table] Not everything helped: the search modes gave no clear gain, the cardinality constraint changed nothing, and Chuffed was five times slower. [correctness] 1084 runs against brute force, zero mismatches.
+[bars] And a proof is something the solver can use. We gave it this count as a constraint, [green bar] and thirteen is now rejected before any search: six hundredths of a second.
 
-### 10. `ToolsUsed` (2:35 – 2:50)
+### 9. `ExplainerScene` (2:37 – 2:48)
 
-[columns] The generalisation, parity argument, search modes and explainer are my design. Claude Code set up MiniZinc, rewrote the symmetry constraint, wrote the self-test and ran the benchmark. [footer] Claude helped write the report and this animation.
+[question and answer] Finally, when there's no solution, our program tells you *why*. [bar] It explains 40 of the 68 impossible cases we tested.
 
 ---
 
@@ -64,18 +64,17 @@ Run these in order. Times are from the benchmark machine; yours will differ slig
 
 | # | Command | What to say |
 |---|---|---|
-| 1 | `python3 proj.py 8` | First solution, checked by the independent checker (`valid=True`). |
-| 2 | `python3 proj.py 7 -s 3 -d 2 --all` | The extension: three copies, offset 2, all solutions counted. |
-| 3 | `python3 proj.py 6` | Impossible instance, solved quickly, and the explainer's sentence. |
-| 4 | `python3 proj.py 14 --parity` | The parity cut: proved instantly. |
-| 5 | `python3 proj.py 12 --all` then `--no-sym` | Symmetry breaking: 108,144 vs 216,288 solutions. Takes ~8 s and ~15 s. |
-| 6 | Show the end of a `--selftest` log and `results.csv` | The full self-test takes long; show a saved log rather than running it live. |
+| 1 | `python3 proj.py 8` | A solution for eight, checked by an independent checker (`valid=True`). |
+| 2 | `python3 proj.py 9 -s 3 --all` | The extension: three copies of one to nine, as in the video. All 3 solutions (up to reversal), each checked. The original model can't express this. |
+| 3 | `python3 proj.py 6` | No solution, and the program says why. |
+| 4 | `python3 proj.py 14 --parity` | With the parity count, proved impossible instantly. |
+| 5 | `python3 proj.py 12 --all` then `--no-sym` | Mirror images: 108,144 vs 216,288 solutions. Takes ~8 s and ~15 s. |
+| 6 | Show the end of a `--selftest` log | Every option checked against brute force: 1084 runs, zero mismatches. The full self-test is slow; show a saved log. |
 
 ---
 
 ## Before recording
 
-- If you present as a pair, change "I/my" to "we/our".
-- Scene 1: the numbers shown (3, 4, 7, 8, 11, 12) are where solutions exist. That pattern is a known result; your model and explainer confirm it.
-- Scene 8: the terminal text is what `proj.py` prints for n=14, but split across two lines for readability. Replace the time with the one from your own run if it differs.
-- The animation code itself was written with Claude. Scene 10 says so; the report's reflection section does not yet. Add one sentence there.
+- Both members must appear on camera; split the scenes between you.
+- Scene 7: "Do the same count for any *n*" shows why solutions can *only* exist for 0 or 3 mod 4. That they always exist for those *n* is a known result, not something we prove.
+- Scene 9: the sentence on screen is what `proj.py` prints for *n* = 13 (sum 247/2), reworded for viewers.

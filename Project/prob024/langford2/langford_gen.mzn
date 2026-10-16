@@ -1,11 +1,8 @@
-% Generalised Langford / Nickerson sequences L(s,n).
-% Baseline: Hakan Kjellerstrand's model (CC-BY-4.0), kept in langford2.mzn.
-% Only the globals we use: globals.mzn does not type-check with Debian's MiniZinc 2.6.4 + Gecode 6.2.0.
 include "alldifferent.mzn";
 include "global_cardinality.mzn";
 include "lex_lesseq.mzn";
 
-% ---- data, all set from proj.py ----
+% data from proj.py
 int: n;                 % numbers 1..n
 int: s;                 % copies per number (s=2 is classic Langford)
 int: d;                 % consecutive copies of i are i+d apart (d=1 Langford, d=0 Nickerson)
@@ -18,7 +15,7 @@ int: N = s * n;
 set of int: NUMS = 1..n;
 set of int: POS  = 1..N;
 
-% p[i] = position of the FIRST copy of i; copy j (0-based) is at p[i] + j*(i+d)
+% p[i] = position of the FIRST copy of i
 array[NUMS] of var POS: p;
 % seq[q] = number at position q (determined by p, kept for output/channelling)
 array[POS] of var NUMS: seq;
@@ -32,14 +29,13 @@ constraint all_different([ p[i] + j*(i+d) | i in NUMS, j in 0..s-1 ]);
 % channelling p -> seq
 constraint forall(i in NUMS, j in 0..s-1)( seq[p[i] + j*(i+d)] = i );
 
-% redundant: every number appears exactly s times
+% every number appears exactly s times
 constraint if use_gcc then
   global_cardinality(seq, [i | i in NUMS], [s | i in NUMS])
 else true endif;
 
-% symmetry: keep only one of a sequence and its reverse.
-% Reversing moves the first copy of i to N+1 - (s-1)*(i+d) - p[i]. The comparison is on p, in the
-% order the search branches: lex on seq fights largest-first search (it wants small numbers first).
+% keep only one of a sequence and its reverse.
+% Reversing moves the first copy of i to N+1 - (s-1)*(i+d) - p[i]. 
 array[NUMS] of var int: p_rev = [ N+1 - (s-1)*(i+d) - p[i] | i in NUMS ];
 constraint if break_symmetry then
   if search_mode < 2 then lex_lesseq(p, p_rev)
@@ -55,11 +51,11 @@ constraint if use_parity_cut /\ s = 2 /\ d = 1 then
   else false endif
 else true endif;
 
-% search: 0/1 = natural order, 2/3 = largest number first
+% 0/1 = natural order, 2/3 = largest number first
 array[NUMS] of var POS: p_desc = [ p[n+1-i] | i in NUMS ];
 solve :: ( if   search_mode = 0 then int_search(p,      input_order, indomain_min)
            elseif search_mode = 1 then int_search(p,      first_fail,  indomain_min)
            elseif search_mode = 2 then int_search(p_desc, input_order, indomain_min)
            else                        int_search(p_desc, first_fail,  indomain_min)
            endif ) satisfy;
-% No output item on purpose: the Python package reads the variables directly.
+% Python package reads the variables directly.
